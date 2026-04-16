@@ -85,10 +85,11 @@ export async function verificar({ referencia, contexto }) {
   } else if (parse.tipo === "TRIBUNAL_SUPERIOR" && parse.tribunalInferido === "STJ") {
     try {
       const r = await buscarAcordaoPorNumero(parse.recurso.numero);
+      existencia.fonte = "STJ SCON";
+      existencia.url_fonte = r.url;
+
       if (r.encontrado) {
         conteudo = extrairDoScon(r, parse);
-        existencia.fonte = "STJ SCON";
-        existencia.url_fonte = r.url;
 
         const ufCitada = parse.recurso.uf;
         const ufReal = (() => {
@@ -105,10 +106,35 @@ export async function verificar({ referencia, contexto }) {
           existencia.status = "ENCONTRADO";
           existencia.numero_real = parse.referenciaNormalizada;
         }
+      } else if (r.bloqueadoCloudflare || r.erroScraping) {
+        // SCON bloqueado — tenta Datajud STJ como fallback (doc: Camada 1, fonte alternativa)
+        existencia.flags.push(r.bloqueadoCloudflare
+          ? "SCON_CLOUDFLARE: tentando Datajud STJ como fallback"
+          : "SCON_HTML_MUDOU: tentando Datajud STJ como fallback");
+        try {
+          const dj = await buscarProcessoPorNumero("stj", parse.recurso.numero);
+          if (dj.encontrado) {
+            conteudo = extrairDoDatajud(dj.doc, parse);
+            existencia.status = "ENCONTRADO";
+            existencia.numero_real = dj.doc?.numeroProcesso || parse.referenciaNormalizada;
+            existencia.fonte = "Datajud (STJ) — via fallback";
+            existencia.url_fonte = dj.url;
+          } else if (dj.erro) {
+            // Datajud retornou erro HTTP (429, 5xx) — não é "não existe", é falha de infra
+            existencia.status = "ERRO_SCRAPING";
+            existencia.fonte = "STJ SCON + Datajud (STJ)";
+            existencia.flags.push(`AMBAS_FONTES_INDISPONIVEIS: SCON=Cloudflare, Datajud=${dj.erro}`);
+          } else {
+            existencia.status = "NAO_ENCONTRADO";
+            existencia.fonte = "STJ SCON + Datajud (STJ)";
+            existencia.flags.push("NAO_LOCALIZADO_EM_NENHUMA_FONTE");
+          }
+        } catch (djErr) {
+          existencia.status = "ERRO_SCRAPING";
+          existencia.flags.push(`CLOUDFLARE_BLOQUEOU_SCON + DATAJUD_ERRO: ${djErr.message}`);
+        }
       } else {
         existencia.status = "NAO_ENCONTRADO";
-        existencia.fonte = "STJ SCON";
-        existencia.url_fonte = r.url;
       }
     } catch (e) {
       existencia.status = "ERRO_FONTE";

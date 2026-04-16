@@ -107,13 +107,18 @@
 
     // Conteudo
     var co = d.conteudo || {};
+    var semConteudo = !co.assunto_real && (!co.flags || !co.flags.length) && co.dispositivo === "DESCONHECIDO";
     html += '<div class="card">';
     html += '<h2>Conteudo</h2>';
-    html += row("Assunto real", co.assunto_real || "—");
-    html += row("Dispositivo", co.dispositivo || "—");
-    html += row("Grau", co.grau || "—");
-    html += row("Tema repetitivo", co.tema_repetitivo || "—");
-    html += '<div style="margin-top:.6rem"><span class="rk" style="display:block;margin-bottom:.3rem">Flags</span>' + renderFlags(co.flags) + '</div>';
+    if (semConteudo && (ex.status === "ERRO_SCRAPING" || ex.status === "NAO_ENCONTRADO" || ex.status === "ERRO_FONTE")) {
+      html += '<div class="aviso-indisponivel">Conteúdo não recuperado — processo não localizado nas fontes consultadas ou fonte inacessível. Verifique manualmente no link acima.</div>';
+    } else {
+      html += row("Assunto real", co.assunto_real || "—");
+      html += row("Dispositivo", co.dispositivo || "—");
+      html += row("Grau", co.grau || "—");
+      html += row("Tema repetitivo", co.tema_repetitivo || "—");
+      html += '<div style="margin-top:.6rem"><span class="rk" style="display:block;margin-bottom:.3rem">Flags</span>' + renderFlags(co.flags) + '</div>';
+    }
     html += '</div>';
 
     // Adequacao

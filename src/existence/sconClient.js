@@ -37,6 +37,20 @@ function htmlToText(html) {
 }
 
 /**
+ * Detecta se o HTML retornado é uma página de desafio Cloudflare.
+ * O SCON usa Cloudflare Managed Challenge, que requer JavaScript interativo —
+ * impossível de resolver com fetch() simples.
+ */
+function detectarCloudflare(html) {
+  return (
+    /cf_chl_opt/i.test(html) ||
+    /Enable JavaScript and cookies to continue/i.test(html) ||
+    /Verifica[çc][aã]o autom[aá]tica em andamento/i.test(html) ||
+    /cdn-cgi\/challenge-platform/i.test(html)
+  );
+}
+
+/**
  * Extrai blocos de resultado do HTML do SCON usando regex.
  * Replica a lógica anterior que usava cheerio, sem o overhead do parser DOM.
  */
@@ -101,15 +115,32 @@ export async function buscarAcordaoPorNumero(numero) {
     },
   });
 
+  // Verifica Cloudflare antes do status HTTP: o SCON retorna 403 com página CF
+  if (detectarCloudflare(res.text)) {
+    return {
+      encontrado: false,
+      bloqueadoCloudflare: true,
+      resultados: [],
+      url,
+      raw: res.text.slice(0, 500),
+      erro: `CLOUDFLARE_CHALLENGE (HTTP ${res.status}): SCON exige verificação interativa de navegador`,
+    };
+  }
+
   if (!res.ok) {
     return { encontrado: false, resultados: [], url, raw: res.text, erro: `HTTP ${res.status}` };
   }
 
   const { resultados, temResultadoVisivel, textoPagina } = extrairAcordaosHTML(res.text);
 
+  // Página sem "nenhum resultado" mas parser não extraiu nenhum bloco →
+  // provavelmente mudança de HTML; sinalizar como scraping falho.
+  const erroScraping = temResultadoVisivel && resultados.length === 0;
+
   return {
     encontrado: resultados.length > 0,
     paginaComConteudo: temResultadoVisivel,
+    erroScraping,
     resultados,
     url,
     raw: textoPagina,

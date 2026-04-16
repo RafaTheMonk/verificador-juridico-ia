@@ -31,12 +31,32 @@ export function recomendar({ existencia, conteudo, adequacao, parseResult }) {
     motivos.push("Dígito verificador CNJ inválido — referência muito provavelmente inventada.");
   }
   if (existencia.status === "NAO_ENCONTRADO") {
-    rec = pior(rec, "REMOVER"); urg = piorUrg(urg, "CRITICO");
-    motivos.push("Processo não encontrado nas fontes oficiais consultadas.");
+    // Se todas as fontes falharam por limitação de infra (CF + Datajud sem índice),
+    // não temos evidência real de não-existência — tratar como inconclusivo.
+    const todasFontesIndisponiveis = existencia.flags.some(
+      f => f.startsWith("SCON_CLOUDFLARE") || f.startsWith("AMBAS_FONTES")
+    );
+    if (todasFontesIndisponiveis) {
+      rec = pior(rec, "REVISAR"); urg = piorUrg(urg, "MEDIO");
+      motivos.push("Fontes oficiais inacessíveis (Cloudflare / Datajud sem índice por número sequencial) — existência inconclusiva. Verifique manualmente em scon.stj.jus.br");
+    } else {
+      rec = pior(rec, "REMOVER"); urg = piorUrg(urg, "CRITICO");
+      motivos.push("Processo não encontrado nas fontes oficiais consultadas.");
+    }
   }
   if (existencia.status === "EXISTE_COM_DIVERGENCIA") {
     rec = pior(rec, "CORRIGIR"); urg = piorUrg(urg, "ALTO");
     motivos.push("Processo existe, porém há divergência nos dados informados (ex: UF, número).");
+  }
+  if (existencia.status === "ERRO_SCRAPING") {
+    rec = pior(rec, "REVISAR"); urg = piorUrg(urg, "MEDIO");
+    const detalhe = existencia.flags.find(f => f.startsWith("CLOUDFLARE") || f.startsWith("HTML_MUDOU") || f.startsWith("AMBAS")) || "";
+    motivos.push(`Não foi possível confirmar existência automaticamente (${detalhe || "fonte inacessível"}). Verifique manualmente em ${existencia.url_fonte || "scon.stj.jus.br"}`);
+  }
+  if (existencia.status === "ERRO_FONTE") {
+    rec = pior(rec, "REVISAR"); urg = piorUrg(urg, "MEDIO");
+    const detalhe = existencia.flags.find(f => f.startsWith("ERRO:")) || "erro na consulta";
+    motivos.push(`Falha ao consultar fonte oficial (${detalhe}) — não foi possível verificar existência. Verifique manualmente.`);
   }
 
   // --- Conteúdo (dispositivo/grau) -----------------------------------------

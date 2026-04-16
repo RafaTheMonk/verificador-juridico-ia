@@ -74,7 +74,7 @@ const server = createServer(async (req, res) => {
       return verificarController(req, res);
     }
 
-    if (url.pathname === "/health" || (url.pathname === "/" && req.method === "GET")) {
+    if (url.pathname === "/health") {
       return healthController(req, res);
     }
 

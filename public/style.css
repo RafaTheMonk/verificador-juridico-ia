@@ -198,5 +198,18 @@ a:hover { text-decoration: underline; }
 .s-NAO_ENCONTRADO        { color: #ef4444; font-weight: 600; }
 .s-FORMATO_INVALIDO      { color: #ef4444; font-weight: 600; }
 .s-ERRO_FONTE            { color: #f97316; font-weight: 600; }
+.s-ERRO_SCRAPING         { color: #f97316; font-weight: 600; }
 .s-FONTE_NAO_COBERTA     { color: #64748b; font-weight: 600; }
 .s-DESCONHECIDO          { color: #64748b; font-weight: 600; }
+
+/* aviso de dados indisponíveis */
+.aviso-indisponivel {
+  font-size: .78rem;
+  color: #64748b;
+  background: rgba(100,116,139,.08);
+  border: 1px solid #2a2d3a;
+  border-radius: 6px;
+  padding: .45rem .7rem;
+  margin-top: .5rem;
+  line-height: 1.5;
+}
