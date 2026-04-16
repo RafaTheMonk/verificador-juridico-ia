@@ -55,7 +55,7 @@ test("caso 2 (0815641-45.2025.8.10.0040): parse + conteúdo simulado resultam em
   assert.equal(parse.tipo, "CNJ");
   assert.equal(parse.dv.valido, true);
   assert.equal(parse.siglaDatajud, "tjma");
-  assert.ok(parse.flags.includes("PRIMEIRO_GRAU"));
+  assert.ok(parse.flags.includes("VARA_NAO_ZERO"));
 
   const conteudo = {
     assuntoReal: "Contratos Bancários",

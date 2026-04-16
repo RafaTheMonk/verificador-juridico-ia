@@ -19,6 +19,20 @@ import { flagsFromMovimentos, inferirDispositivo } from "./tpuFlags.js";
  * @property {string|null} ementa
  */
 
+/**
+ * Extrai a data de julgamento dos movimentos TPU.
+ * Prioriza código 848 (acórdão publicado), 900 (sentença), depois provimentos.
+ * Fallback: dataHoraUltimaAtualizacao do processo.
+ */
+function extrairDataJulgamento(doc) {
+  const CODIGOS_JULGAMENTO = new Set([848, 900, 219, 220, 221, 196]);
+  const movimentos = Array.isArray(doc.movimentos) ? doc.movimentos : [];
+  const candidatos = movimentos
+    .filter(m => CODIGOS_JULGAMENTO.has(Number(m.codigo)) && m.dataHora)
+    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+  return candidatos[0]?.dataHora || doc.dataHoraUltimaAtualizacao || null;
+}
+
 function mapearGrau(grauDatajud) {
   if (!grauDatajud) return null;
   const g = String(grauDatajud).toUpperCase();
@@ -49,7 +63,7 @@ export function extrairDoDatajud(doc, parseResult) {
     tribunal: doc.tribunal || parseResult?.tribunalInferido || null,
     orgaoJulgador: doc.orgaoJulgador?.nome || null,
     relator: null, // Datajud público raramente expõe relator - viria do SCON
-    dataJulgamento: doc.dataAjuizamento || null,
+    dataJulgamento: extrairDataJulgamento(doc),
     dataAjuizamento: doc.dataAjuizamento || null,
     numeroProcesso: doc.numeroProcesso || null,
     flags: tpuFlagsList,
@@ -76,8 +90,9 @@ export function extrairDoScon(resultadoScon, parseResult) {
   }
 
   return {
-    assuntoReal: r.classe || r.ementa?.slice(0, 180) || null,
-    assuntos: r.classe ? [r.classe] : [],
+    assuntoReal: r.ementa?.slice(0, 180) || null,
+    assuntos: r.ementa ? [r.ementa.slice(0, 180)] : [],
+    classeProcessual: r.classe || null,
     dispositivo: flags.includes("NAO_CONHECIDO") ? "NAO_CONHECIDO" : null,
     grau: "superior",
     tribunal: "STJ",

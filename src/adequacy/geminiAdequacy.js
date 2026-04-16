@@ -13,7 +13,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const MODEL = "gemini-2.0-flash"; // rápido, nível gratuito generoso
+const MODEL = "gemini-2.5-pro"; // rápido, nível gratuito generoso
 
 function getClient() {
   const apiKey = process.env.GEMINI_API_KEY;

@@ -29,16 +29,24 @@ function authHeader() {
 export async function buscarProcessoPorNumero(sigla, numeroProcesso) {
   if (!sigla) throw new Error("Datajud: sigla do tribunal obrigatória");
 
-  // O Datajud aceita tanto com quanto sem separadores; normalizamos com apenas dígitos,
-  // o que aumenta recall (o ES usa analyzer padrão sobre numeroProcesso).
-  const apenasDigitos = String(numeroProcesso).replace(/\D/g, "");
+  // Buscamos pelo número normalizado (com separadores CNJ) via match_phrase,
+  // que respeita a tokenização do Elasticsearch. O fallback com dígitos puros
+  // garante recall quando o número foi indexado em formato diferente.
+  const numeroNormalizado = String(numeroProcesso).trim();
+  const apenasDigitos = numeroNormalizado.replace(/\D/g, "");
 
   const url = `${BASE}/api_publica_${sigla}/_search`;
 
   const payload = {
     size: 5,
     query: {
-      match: { numeroProcesso: apenasDigitos },
+      bool: {
+        should: [
+          { match_phrase: { numeroProcesso: numeroNormalizado } },
+          { match: { numeroProcesso: apenasDigitos } },
+        ],
+        minimum_should_match: 1,
+      },
     },
   };
 

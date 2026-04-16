@@ -97,8 +97,12 @@ export async function buscarAcordaoPorNumero(numero) {
 
   const { resultados, temResultadoVisivel, textoPagina } = extrairAcordaosHTML(res.text);
 
+  // "encontrado" só é true quando há blocos estruturados extraídos.
+  // "paginaComConteudo" indica que a página parece ter resultados mas a
+  // extração não conseguiu estruturá-los (HTML modificado, scraping frágil).
   return {
-    encontrado: resultados.length > 0 || temResultadoVisivel,
+    encontrado: resultados.length > 0,
+    paginaComConteudo: temResultadoVisivel,
     resultados,
     url,
     raw: textoPagina,

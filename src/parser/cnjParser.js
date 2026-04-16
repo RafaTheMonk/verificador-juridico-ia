@@ -31,7 +31,7 @@ const TR_ESTADUAL = {
   "13": "TJMG", "14": "TJPA", "15": "TJPB", "16": "TJPR",
   "17": "TJPE", "18": "TJPI", "19": "TJRJ", "20": "TJRN",
   "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
-  "25": "TJSP", "26": "TJSE", "27": "TJTO",
+  "25": "TJSE", "26": "TJSP", "27": "TJTO",
 };
 
 const TR_FEDERAL = {
@@ -82,7 +82,7 @@ export function parseCNJ(referencia) {
   }
   if (anoInt > anoAtual) flags.push("ANO_FUTURO");
   if (anoInt < 1998) flags.push("ANO_SUSPEITO"); // CNJ unificou numeração em 2010; antes de 1998 é altamente improvável
-  if (vara !== "0000") flags.push("PRIMEIRO_GRAU");
+  if (vara !== "0000") flags.push("VARA_NAO_ZERO");
   else flags.push("ORIGINARIO_OU_SEGUNDO_GRAU");
 
   return {

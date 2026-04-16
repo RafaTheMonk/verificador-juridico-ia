@@ -8,7 +8,7 @@
     "recomendacao": "REMOVER",
     "observacoes": [
       "parser: DV válido (processo existe fisicamente)",
-      "parser: PRIMEIRO_GRAU (vara 0040 != 0000)",
+      "parser: VARA_NAO_ZERO (vara 0040 != 0000)",
       "existencia: ENCONTRADO no Datajud (api_publica_tjma)",
       "conteudo: EXTINTO_SEM_MERITO via movimento TPU 22/237",
       "conteudo: grau = primeiro (não é precedente)"

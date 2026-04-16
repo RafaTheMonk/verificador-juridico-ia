@@ -27,7 +27,7 @@ test("parseCNJ: extrai componentes e infere tribunal", () => {
   assert.equal(p.tribunalInferido, "TJMA");
   assert.equal(p.siglaDatajud, "tjma");
   assert.equal(p.dv.valido, true);
-  assert.ok(p.flags.includes("PRIMEIRO_GRAU"));
+  assert.ok(p.flags.includes("VARA_NAO_ZERO"));
 });
 
 test("parseCNJ: flag FORMATO_INVALIDO quando DV errado", () => {
