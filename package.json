@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/services/verifier.js",
   "scripts": {
+    "build": "echo 'Sem etapa de build — projeto Node.js puro'",
     "dev": "node server.js",
     "start": "node server.js",
     "test": "node --test 'test/**/*.test.js'",
