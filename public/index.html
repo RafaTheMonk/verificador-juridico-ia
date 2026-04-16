@@ -3,35 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verificador Juridico IA</title>
+<title>Verificador Jurídico IA</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="wrap">
 
-  <h1>Verificador Juridico IA</h1>
-  <p class="sub">Verifica se referencias juridicas existem, o que dizem e se sao adequadas ao contexto da peticao.</p>
+  <h1>Verificador Jurídico IA</h1>
+  <p class="sub">Verifica se referências jurídicas existem, o que dizem e se são adequadas ao contexto da petição.</p>
+
+  <div id="warnFile" class="warn">
+    Você abriu este arquivo diretamente (<code>file://</code>). Rode o servidor primeiro:<br>
+    <code>npm run dev</code> e depois acesse <code>http://localhost:3000</code>
+  </div>
 
   <div class="card">
-    <div id="warnFile" class="warn">
-      Voce abriu este arquivo diretamente (<code>file://</code>). Rode o servidor primeiro:<br>
-      <code>npm run dev</code> e depois acesse <code>http://localhost:3000</code>
-    </div>
-
     <div class="casos">
       <span class="caso-label">Casos do desafio:</span>
-      <button class="caso-btn" id="caso1btn">Caso 1 - REsp 1.810.170/RS</button>
-      <button class="caso-btn" id="caso2btn">Caso 2 - 0815641-45.2025.8.10.0040</button>
+      <button class="caso-btn" id="caso1btn">Caso 1 — REsp 1.810.170/RS</button>
+      <button class="caso-btn" id="caso2btn">Caso 2 — 0815641-45.2025.8.10.0040</button>
     </div>
 
     <div class="field">
-      <label for="ref">Referencia juridica</label>
-      <input type="text" id="ref" placeholder="Ex: REsp 1.810.170/RS">
+      <label for="ref">Referência jurídica</label>
+      <input type="text" id="ref" placeholder="Ex: REsp 1.810.170/RS ou 0815641-45.2025.8.10.0040">
     </div>
 
     <div class="field">
-      <label for="ctx">Contexto da peticao</label>
-      <textarea id="ctx" placeholder="Cole aqui o trecho da peticao onde a referencia e citada..."></textarea>
+      <label for="ctx">Contexto da petição</label>
+      <textarea id="ctx" placeholder="Cole aqui o trecho da petição onde a referência é citada..."></textarea>
     </div>
 
     <button class="btn" id="btnVerificar">
@@ -41,8 +41,17 @@
     <div class="progress" id="progress"><div class="progress-bar"></div></div>
   </div>
 
-  <div id="result"></div>
+</div>
 
+<!-- Modal de resultado -->
+<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title" class="modal-title">Resultado da verificação</span>
+      <button class="modal-close" id="modalClose" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
 </div>
 
 <script src="/script.js"></script>
