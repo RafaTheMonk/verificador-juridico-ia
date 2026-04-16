@@ -11,6 +11,6 @@
     "test:casos": "node --test test/casos.test.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   }
 }
