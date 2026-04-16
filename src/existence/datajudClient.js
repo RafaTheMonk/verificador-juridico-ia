@@ -9,7 +9,7 @@
  * Rate limit documentado: ~120 req/min. Respeitamos com retry exponencial.
  */
 
-import { httpRequest } from "../util/httpClient.js";
+import { httpRequest } from "../utils/httpClient.js";
 
 const BASE = "https://api-publica.datajud.cnj.jus.br";
 const PUBLIC_KEY_FALLBACK =

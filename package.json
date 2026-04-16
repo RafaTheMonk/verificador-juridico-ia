@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Verificador Automatizado de Referências Jurídicas Geradas por IA",
   "type": "module",
-  "main": "api/verificar.js",
+  "main": "src/services/verifier.js",
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
@@ -12,11 +12,5 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "dependencies": {
-    "@google/genai": "^1.25.0",
-    "cheerio": "^1.0.0",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0"
   }
 }

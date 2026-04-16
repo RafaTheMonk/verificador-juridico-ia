@@ -1,21 +1,7 @@
 /**
- * Health check - GET /
+ * Vercel serverless entry point — GET /health
+ * Delega para o controller.
  */
-export default function handler(req, res) {
-  res.status(200).json({
-    ok: true,
-    service: "verificador-juridico-ia",
-    version: "0.1.0",
-    endpoints: {
-      "POST /verificar": "Verifica uma referência jurídica + contexto",
-    },
-    exemplo: {
-      method: "POST",
-      path: "/verificar",
-      body: {
-        referencia: "REsp 1.810.170/RS",
-        contexto: "... (trecho da petição) ...",
-      },
-    },
-  });
-}
+import healthController from "../src/controllers/health.js";
+
+export default healthController;

@@ -1,56 +1,53 @@
 /**
  * Adequação contextual via Gemini — DUAS PASSAGENS sequenciais.
+ * Sem dependências externas — usa fetch nativo para a REST API do Gemini.
  *
- * Passagem 1: o modelo infere a TESE da petição a partir SOMENTE do
- *             contexto. Não recebe o conteúdo real do julgado, para
- *             evitar "anchoring" (tendência a aceitar o que o julgado
- *             diz como se fosse a tese defendida).
- *
- * Passagem 2: com a tese em mãos, o modelo compara com os metadados
- *             reais (assuntos, dispositivo, grau, ementa curta) e
- *             emite o veredito em três dimensões.
+ * Passagem 1: infere a tese da petição SEM ver o julgado (evita anchoring).
+ * Passagem 2: compara a tese com os metadados reais e emite o veredito.
  */
 
-import { GoogleGenAI } from "@google/genai";
+const MODEL = "gemini-2.5-pro";
+const GEMINI_URL = (model, key) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
-const MODEL = "gemini-2.5-pro"; // rápido, nível gratuito generoso
-
-function getClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
-}
-
-async function generate(ai, systemText, userText, expectJson = false) {
-  const resp = await ai.models.generateContent({
-    model: MODEL,
-    config: {
-      temperature: 0,
-      responseMimeType: expectJson ? "application/json" : "text/plain",
-      systemInstruction: [{ text: systemText }],
-    },
+async function generate(apiKey, systemText, userText, expectJson = false) {
+  const body = {
     contents: [{ role: "user", parts: [{ text: userText }] }],
+    systemInstruction: { parts: [{ text: systemText }] },
+    generationConfig: {
+      temperature: 0,
+      ...(expectJson ? { responseMimeType: "application/json" } : {}),
+    },
+  };
+
+  const res = await fetch(GEMINI_URL(MODEL, apiKey), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  return resp.text ?? resp.response?.text?.() ?? "";
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(JSON.stringify(err));
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 function parseJsonTolerante(s) {
   if (!s) return null;
   const start = Math.min(
-    ...["{", "["].map((c) => (s.indexOf(c) === -1 ? Infinity : s.indexOf(c))),
+    ...["{", "["].map((c) => (s.indexOf(c) === -1 ? Infinity : s.indexOf(c)))
   );
   if (!Number.isFinite(start)) return null;
-  const txt = s.slice(start).replace(/```[\s\S]*$/, "").trim();
-  try { return JSON.parse(txt); } catch { return null; }
+  try { return JSON.parse(s.slice(start).replace(/```[\s\S]*$/, "").trim()); }
+  catch { return null; }
 }
 
-export async function avaliarAdequacaoLLM({
-  referenciaNormalizada,
-  contexto,
-  conteudo,
-}) {
-  const ai = getClient();
-  if (!ai) return null; // chamador cai para o rule-based
+export async function avaliarAdequacaoLLM({ referenciaNormalizada, contexto, conteudo }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
 
   // ----------- Passagem 1: inferir tese sem mostrar o julgado ----------------
   const sys1 = `Você é um assistente jurídico experiente. Dado um trecho de petição
@@ -60,14 +57,9 @@ citada de fato diz. Responda em JSON com duas chaves:
   "tese_inferida": string curta (até 25 palavras) descrevendo a tese
   "tribunal_esperado": uma das strings [STJ, STF, TJ estadual, TRF, TST, outro]`;
 
-  const user1 = `Referência citada: ${referenciaNormalizada}
+  const user1 = `Referência citada: ${referenciaNormalizada}\n\nTrecho da petição:\n"""\n${contexto}\n"""`;
 
-Trecho da petição:
-"""
-${contexto}
-"""`;
-
-  const text1 = await generate(ai, sys1, user1, true);
+  const text1 = await generate(apiKey, sys1, user1, true);
   const passo1 = parseJsonTolerante(text1) || { tese_inferida: "", tribunal_esperado: null };
 
   // ----------- Passagem 2: comparar com o julgado real -----------------------
@@ -81,13 +73,11 @@ INDEPENDENTES e retornar APENAS JSON:
   "justificativa": "1-3 frases objetivas"
 }
 Regras:
-- Se o dispositivo é NAO_CONHECIDO ou EXTINTO_SEM_MERITO → adequacao_dispositivo = INUTIL
-  e peso_precedencial = NULO.
-- Se o grau é "primeiro" → peso_precedencial = NULO (sentença não é precedente).
-- Se os assuntos do processo nada têm a ver com a tese → adequacao_tematica = INADEQUADO.`;
+- Se o dispositivo é NAO_CONHECIDO ou EXTINTO_SEM_MERITO → adequacao_dispositivo = INUTIL e peso_precedencial = NULO.
+- Se o grau é "primeiro" → peso_precedencial = NULO.
+- Se os assuntos nada têm a ver com a tese → adequacao_tematica = INADEQUADO.`;
 
-  const user2 = `Tese que a petição quer sustentar:
-${passo1.tese_inferida || "(não inferida)"}
+  const user2 = `Tese que a petição quer sustentar:\n${passo1.tese_inferida || "(não inferida)"}
 
 Metadados REAIS do julgado citado (${referenciaNormalizada}):
 - tribunal: ${conteudo?.tribunal || "?"}
@@ -99,7 +89,7 @@ Metadados REAIS do julgado citado (${referenciaNormalizada}):
 
 Avalie as três dimensões em JSON.`;
 
-  const text2 = await generate(ai, sys2, user2, true);
+  const text2 = await generate(apiKey, sys2, user2, true);
   const passo2 = parseJsonTolerante(text2) || {};
 
   return {

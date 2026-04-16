@@ -1,42 +1,99 @@
 /**
- * Servidor Express para desenvolvimento local.
- * Em produção na Vercel, cada arquivo em api/*.js é uma função serverless
- * independente e este arquivo não é utilizado.
+ * Servidor de desenvolvimento local — node:http puro, sem Express.
+ * Em produção (Vercel), este arquivo não é usado: cada api/*.js é uma
+ * função serverless independente.
  */
 
-import "dotenv/config";
-import path from "path";
-import { fileURLToPath } from "url";
-import express from "express";
-import verificarHandler from "./api/verificar.js";
-import healthHandler from "./api/health.js";
+import { createServer } from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import { extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { loadEnv } from "./src/utils/envLoader.js";
+import verificarController from "./src/controllers/verificar.js";
+import healthController from "./src/controllers/health.js";
 
-const app = express();
-app.use(express.json({ limit: "1mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+loadEnv();
 
-app.get("/", (req, res) => healthHandler(req, res));
-app.get("/health", (req, res) => healthHandler(req, res));
-app.get("/verificar", (_req, res) =>
-  res.status(405).json({
-    ok: false,
-    error: "Use POST para este endpoint.",
-    exemplo: {
-      method: "POST",
-      url: "/verificar",
-      headers: { "Content-Type": "application/json" },
-      body: { referencia: "REsp 1.810.170/RS", contexto: "..." },
-    },
-    curl: `curl -X POST http://localhost:${process.env.PORT || 3000}/verificar -H "Content-Type: application/json" -d '{"referencia":"REsp 1.810.170/RS","contexto":"..."}'`,
-  })
-);
-app.post("/verificar", (req, res) => verificarHandler(req, res));
+const __dir = fileURLToPath(new URL(".", import.meta.url));
+const PUBLIC_DIR = join(__dir, "public");
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".css":  "text/css; charset=utf-8",
+  ".js":   "application/javascript; charset=utf-8",
+  ".json": "application/json",
+  ".svg":  "image/svg+xml",
+  ".ico":  "image/x-icon",
+  ".png":  "image/png",
+};
+
+// ─── Utilitários ─────────────────────────────────────────────────────────────
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => {
+      try { req.body = data ? JSON.parse(data) : {}; resolve(); }
+      catch { req.body = {}; resolve(); }
+    });
+    req.on("error", reject);
+  });
+}
+
+function serveStatic(pathname, res) {
+  const safe = pathname.replace(/\.\./g, "").split("?")[0] || "/";
+  const filePath = resolve(join(PUBLIC_DIR, safe === "/" ? "index.html" : safe));
+
+  if (!filePath.startsWith(PUBLIC_DIR) || !existsSync(filePath)) return false;
+
+  const mime = MIME[extname(filePath)] || "application/octet-stream";
+  res.writeHead(200, { "Content-Type": mime });
+  res.end(readFileSync(filePath));
+  return true;
+}
+
+// ─── Roteador ────────────────────────────────────────────────────────────────
+
+const server = createServer(async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    return res.end();
+  }
+
+  const url = new URL(req.url, "http://localhost");
+
+  try {
+    if (url.pathname === "/verificar") {
+      if (req.method === "POST") await parseBody(req);
+      return verificarController(req, res);
+    }
+
+    if (url.pathname === "/health" || (url.pathname === "/" && req.method === "GET")) {
+      return healthController(req, res);
+    }
+
+    // Arquivos estáticos (public/)
+    if (!serveStatic(url.pathname, res)) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "Não encontrado." }));
+    }
+  } catch (err) {
+    console.error("[server]", err.message);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: err.message }));
+  }
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`✅ Verificador Jurídico rodando em http://localhost:${PORT}`);
   console.log(`   Interface:  http://localhost:${PORT}`);
   console.log(`   POST        http://localhost:${PORT}/verificar`);
+  console.log(`   GET         http://localhost:${PORT}/health`);
 });
