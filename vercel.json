@@ -3,7 +3,7 @@
   "version": 2,
   "functions": {
     "api/verificar.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "rewrites": [
