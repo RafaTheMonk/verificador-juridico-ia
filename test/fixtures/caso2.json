@@ -1,0 +1,17 @@
+{
+  "descricao": "Processo de 1º grau do TJMA citado como 'precedente firmado neste Egrégio Tribunal', extinto por desistência.",
+  "entrada": {
+    "referencia": "0815641-45.2025.8.10.0040",
+    "contexto": "No âmbito deste Egrégio Tribunal de Justiça do Estado do Maranhão, cumpre citar o precedente firmado nos autos do processo nº 0815641-45.2025.8.10.0040, que consolidou entendimento favorável à tese ora defendida."
+  },
+  "esperado": {
+    "recomendacao": "REMOVER",
+    "observacoes": [
+      "parser: DV válido (processo existe fisicamente)",
+      "parser: PRIMEIRO_GRAU (vara 0040 != 0000)",
+      "existencia: ENCONTRADO no Datajud (api_publica_tjma)",
+      "conteudo: EXTINTO_SEM_MERITO via movimento TPU 22/237",
+      "conteudo: grau = primeiro (não é precedente)"
+    ]
+  }
+}

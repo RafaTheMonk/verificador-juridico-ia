@@ -1,0 +1,16 @@
+{
+  "descricao": "REsp 1.810.170 citado com UF errada (RS em vez de SP), para tema incompatível (taxa de conveniência vs. previdência privada), com julgado que não conheceu o recurso.",
+  "entrada": {
+    "referencia": "REsp 1.810.170/RS",
+    "contexto": "Conforme entendimento pacificado no STJ, a cobrança de taxa de conveniência é abusiva ao consumidor, como decidido no REsp 1.810.170/RS, razão pela qual deve ser reconhecida a ilegalidade da cobrança no presente caso."
+  },
+  "esperado": {
+    "recomendacao": "REMOVER",
+    "observacoes": [
+      "existencia: UF_DIVERGENTE (RS -> SP)",
+      "conteudo: assunto real é previdência privada, não taxa de conveniência",
+      "conteudo: recurso NAO_CONHECIDO",
+      "adequacao: adequacao_tematica INADEQUADO, dispositivo INUTIL, peso NULO"
+    ]
+  }
+}

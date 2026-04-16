@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "functions": {
+    "api/verificar.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/verificar", "destination": "/api/verificar" },
+    { "source": "/", "destination": "/api/health" }
+  ]
+}
