@@ -112,10 +112,32 @@
       font-weight: 600;
       padding: .7rem 1.4rem;
       cursor: pointer;
-      transition: opacity .2s;
+      transition: opacity .2s, background .2s;
+      width: 100%;
+      justify-content: center;
     }
     .btn:hover  { opacity: .85; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; background: #4b4e6d; }
+
+    .loading-bar {
+      display: none;
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+    .loading-bar-inner {
+      height: 100%;
+      width: 40%;
+      background: var(--accent);
+      border-radius: 99px;
+      animation: slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
 
     .spinner {
       width: 16px; height: 16px;
@@ -193,6 +215,23 @@
       font-size: .9rem;
     }
 
+    .warn-box {
+      background: rgba(234,179,8,.08);
+      border: 1px solid rgba(234,179,8,.3);
+      border-radius: 8px;
+      padding: .85rem 1.1rem;
+      color: #fde047;
+      font-size: .85rem;
+      margin-bottom: 1.2rem;
+      display: none;
+    }
+    .warn-box code {
+      background: rgba(255,255,255,.1);
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      font-family: monospace;
+    }
+
     /* ---- color helpers ---- */
     .c-manter     { color: var(--manter); }
     .c-corrigir   { color: var(--corrigir); }
@@ -239,6 +278,11 @@
   </header>
 
   <div class="card">
+    <div id="warn-file" class="warn-box">
+      Você abriu este arquivo diretamente no navegador (<code>file://</code>). Para funcionar, rode o servidor primeiro:<br><br>
+      <code>npm run dev</code> &nbsp;→&nbsp; depois acesse <code>http://localhost:3000</code>
+    </div>
+
     <div class="casos">
       <span style="font-size:.78rem;color:var(--muted);align-self:center;">Casos do desafio:</span>
       <button class="caso-btn" onclick="preencherCaso(1)">Caso 1 — REsp 1.810.170/RS</button>
@@ -259,6 +303,9 @@
       <span class="spinner" id="spinner"></span>
       <span id="btn-label">Verificar</span>
     </button>
+    <div class="loading-bar" id="loading-bar">
+      <div class="loading-bar-inner"></div>
+    </div>
   </div>
 
   <div id="result"></div>
@@ -266,6 +313,11 @@
 </div>
 
 <script>
+  // Avisa se aberto como file://
+  if (location.protocol === "file:") {
+    document.getElementById("warn-file").style.display = "block";
+  }
+
   const CASOS = {
     1: {
       referencia: "REsp 1.810.170/RS",
@@ -369,15 +421,17 @@
       return;
     }
 
-    const btn     = document.getElementById("btn");
-    const spinner = document.getElementById("spinner");
-    const label   = document.getElementById("btn-label");
-    const result  = document.getElementById("result");
+    const btn      = document.getElementById("btn");
+    const spinner  = document.getElementById("spinner");
+    const label    = document.getElementById("btn-label");
+    const result   = document.getElementById("result");
+    const loadBar  = document.getElementById("loading-bar");
 
     btn.disabled  = true;
     btn.classList.add("loading");
     spinner.style.display = "block";
-    label.textContent = "Verificando...";
+    loadBar.style.display = "block";
+    label.textContent = "Consultando fontes oficiais...";
     result.style.display = "none";
 
     try {
@@ -404,6 +458,7 @@
       btn.disabled = false;
       btn.classList.remove("loading");
       spinner.style.display = "none";
+      loadBar.style.display = "none";
       label.textContent = "Verificar";
     }
   }
