@@ -11,6 +11,7 @@ import { buscarAcordaoPorNumero } from "./existence/sconClient.js";
 import { extrairDoDatajud, extrairDoScon } from "./content/metadataExtractor.js";
 import { avaliarAdequacaoCompleta } from "./adequacy/index.js";
 import { recomendar } from "./recommendation/engine.js";
+import { criarRegistro, persistirRegistro } from "./audit/auditTrail.js";
 
 // Cache em memória simples (invalida a cada cold start em serverless; OK)
 const cache = new Map();
@@ -141,6 +142,12 @@ export async function verificar({ referencia, contexto }) {
   // =========================================================================
   const rec = recomendar({ existencia, conteudo, adequacao, parseResult: parse });
 
+  // =========================================================================
+  // Auditoria — snapshot da evidência + resultado persistido em JSONL
+  // =========================================================================
+  const auditoria = criarRegistro({ referencia, parse, existencia, conteudo, adequacao, rec });
+  persistirRegistro(auditoria);
+
   // Monta resposta final no shape da especificação
   const resposta = {
     referencia_normalizada: parse.referenciaNormalizada,
@@ -182,6 +189,8 @@ export async function verificar({ referencia, contexto }) {
         dv: parse.dv,
       },
     },
+
+    _auditoria: auditoria,
   };
 
   // Atualiza cache (não cacheia erros de fonte)
