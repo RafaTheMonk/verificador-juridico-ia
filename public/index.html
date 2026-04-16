@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verificador Jurídico IA</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --accent:    #6366f1;
+
+      --manter:    #22c55e;
+      --corrigir:  #eab308;
+      --revisar:   #f97316;
+      --substituir:#f97316;
+      --remover:   #ef4444;
+
+      --baixo:     #22c55e;
+      --medio:     #eab308;
+      --alto:      #f97316;
+      --critico:   #ef4444;
+
+      --adequado:  #22c55e;
+      --parcial:   #eab308;
+      --inadequado:#ef4444;
+      --util:      #22c55e;
+      --inutil:    #ef4444;
+      --revisar-c: #f97316;
+      --alto-p:    #6366f1;
+      --medio-p:   #3b82f6;
+      --baixo-p:   #64748b;
+      --nulo-p:    #ef4444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    header { margin-bottom: 2.5rem; }
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p  { color: var(--muted); margin-top: .4rem; font-size: .9rem; }
+
+    /* ---- Form ---- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .4rem; text-transform: uppercase; letter-spacing: .05em; }
+
+    input[type="text"], textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .95rem;
+      padding: .65rem .85rem;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+      resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+    textarea { min-height: 110px; }
+
+    .field + .field { margin-top: 1.1rem; }
+
+    .casos {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
+    }
+    .caso-btn {
+      font-size: .78rem;
+      padding: .35rem .75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .caso-btn:hover { border-color: var(--accent); color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-top: 1.2rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: .95rem;
+      font-weight: 600;
+      padding: .7rem 1.4rem;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn:hover  { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: block; }
+
+    /* ---- Result ---- */
+    #result { display: none; }
+
+    .rec-banner {
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .rec-banner .ref   { font-size: .85rem; color: rgba(255,255,255,.7); }
+    .rec-banner .rec   { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+    .rec-banner .urg   { font-size: .78rem; font-weight: 700; background: rgba(0,0,0,.25); padding: .3rem .7rem; border-radius: 20px; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+    .card h2 { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 1rem; }
+
+    .row { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: .65rem; font-size: .88rem; }
+    .row .key  { color: var(--muted); flex-shrink: 0; }
+    .row .val  { text-align: right; font-weight: 500; word-break: break-all; }
+    .row a     { color: var(--accent); text-decoration: none; font-size: .8rem; }
+    .row a:hover { text-decoration: underline; }
+
+    .pill {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: .2rem .55rem;
+      border-radius: 20px;
+      letter-spacing: .03em;
+    }
+
+    .flags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .3rem; }
+    .flag-badge { font-size: .7rem; background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 4px; padding: .15rem .45rem; color: var(--muted); }
+
+    .justificativa-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .88rem;
+      line-height: 1.55;
+      color: var(--text);
+      margin-top: .5rem;
+    }
+
+    .motivos { margin-top: .5rem; }
+    .motivo  { font-size: .82rem; color: var(--muted); padding: .3rem 0; border-bottom: 1px solid var(--border); line-height: 1.45; }
+    .motivo:last-child { border-bottom: none; }
+    .motivo::before { content: "→ "; color: var(--accent); }
+
+    .error-box {
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      color: #fca5a5;
+      font-size: .9rem;
+    }
+
+    /* ---- color helpers ---- */
+    .c-manter     { color: var(--manter); }
+    .c-corrigir   { color: var(--corrigir); }
+    .c-revisar    { color: var(--revisar); }
+    .c-substituir { color: var(--substituir); }
+    .c-remover    { color: var(--remover); }
+
+    .bg-manter     { background: rgba(34,197,94,.15);  color: var(--manter); }
+    .bg-corrigir   { background: rgba(234,179,8,.15);  color: var(--corrigir); }
+    .bg-revisar    { background: rgba(249,115,22,.15); color: var(--revisar); }
+    .bg-substituir { background: rgba(249,115,22,.15); color: var(--substituir); }
+    .bg-remover    { background: rgba(239,68,68,.15);  color: var(--remover); }
+
+    .p-alto     { background: rgba(99,102,241,.15); color: #818cf8; }
+    .p-medio    { background: rgba(59,130,246,.15); color: #60a5fa; }
+    .p-baixo    { background: rgba(100,116,139,.15); color: var(--muted); }
+    .p-nulo     { background: rgba(239,68,68,.12); color: #fca5a5; }
+
+    .t-adequado    { background: rgba(34,197,94,.15);  color: var(--adequado); }
+    .t-parcial     { background: rgba(234,179,8,.15);  color: var(--parcial); }
+    .t-inadequado  { background: rgba(239,68,68,.15);  color: var(--inadequado); }
+    .t-indeterminado { background: rgba(100,116,139,.12); color: var(--muted); }
+
+    .d-util              { background: rgba(34,197,94,.15);  color: var(--util); }
+    .d-inutil            { background: rgba(239,68,68,.15);  color: var(--inutil); }
+    .d-revisar_contra_tese { background: rgba(249,115,22,.15); color: var(--revisar); }
+    .d-indeterminado     { background: rgba(100,116,139,.12); color: var(--muted); }
+
+    .e-encontrado           { color: var(--manter); }
+    .e-existe_com_divergencia { color: var(--corrigir); }
+    .e-nao_encontrado       { color: var(--remover); }
+    .e-formato_invalido     { color: var(--remover); }
+    .e-erro_fonte           { color: var(--revisar); }
+    .e-fonte_nao_coberta    { color: var(--muted); }
+    .e-desconhecido         { color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Verificador Jurídico IA</h1>
+    <p>Verifica se referências jurídicas existem, o que dizem e se são adequadas ao contexto da petição.</p>
+  </header>
+
+  <div class="card">
+    <div class="casos">
+      <span style="font-size:.78rem;color:var(--muted);align-self:center;">Casos do desafio:</span>
+      <button class="caso-btn" onclick="preencherCaso(1)">Caso 1 — REsp 1.810.170/RS</button>
+      <button class="caso-btn" onclick="preencherCaso(2)">Caso 2 — 0815641-45.2025.8.10.0040</button>
+    </div>
+
+    <div class="field">
+      <label for="referencia">Referência jurídica</label>
+      <input type="text" id="referencia" placeholder="Ex: REsp 1.810.170/RS ou 0815641-45.2025.8.10.0040" />
+    </div>
+
+    <div class="field">
+      <label for="contexto">Contexto da petição</label>
+      <textarea id="contexto" placeholder="Cole aqui o trecho da petição onde a referência é citada..."></textarea>
+    </div>
+
+    <button class="btn" id="btn" onclick="verificar()">
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-label">Verificar</span>
+    </button>
+  </div>
+
+  <div id="result"></div>
+
+</div>
+
+<script>
+  const CASOS = {
+    1: {
+      referencia: "REsp 1.810.170/RS",
+      contexto: "Conforme entendimento pacificado no STJ, a cobrança de taxa de conveniência é abusiva ao consumidor, como decidido no REsp 1.810.170/RS, razão pela qual deve ser reconhecida a ilegalidade da cobrança no presente caso."
+    },
+    2: {
+      referencia: "0815641-45.2025.8.10.0040",
+      contexto: "No âmbito deste Egrégio Tribunal de Justiça do Estado do Maranhão, cumpre citar o precedente firmado nos autos do processo nº 0815641-45.2025.8.10.0040, que consolidou entendimento favorável à tese ora defendida."
+    }
+  };
+
+  function preencherCaso(n) {
+    document.getElementById("referencia").value = CASOS[n].referencia;
+    document.getElementById("contexto").value   = CASOS[n].contexto;
+    document.getElementById("result").style.display = "none";
+  }
+
+  function cls(base, val) {
+    return `${base}-${(val || "").toLowerCase().replace(/ /g,"_")}`;
+  }
+
+  function pill(val, classPrefix) {
+    if (!val) return '<span class="pill" style="color:var(--muted)">—</span>';
+    return `<span class="pill ${cls(classPrefix, val)}">${val}</span>`;
+  }
+
+  function flags(arr) {
+    if (!arr || !arr.length) return '<span style="color:var(--muted);font-size:.8rem">nenhuma</span>';
+    return `<div class="flags">${arr.map(f => `<span class="flag-badge">${f}</span>`).join("")}</div>`;
+  }
+
+  function row(key, val) {
+    return `<div class="row"><span class="key">${key}</span><span class="val">${val ?? "—"}</span></div>`;
+  }
+
+  function recColor(rec) {
+    const m = { MANTER:"manter", CORRIGIR:"corrigir", REVISAR:"revisar", SUBSTITUIR:"substituir", REMOVER:"remover" };
+    return m[(rec||"").toUpperCase()] || "manter";
+  }
+
+  function renderResult(d) {
+    const rc  = recColor(d.recomendacao);
+    const urg = (d.nivel_urgencia || "").toLowerCase();
+
+    const banner = `
+      <div class="rec-banner bg-${rc}">
+        <div>
+          <div class="ref">${d.referencia_normalizada} · ${d.tribunal_inferido || "?"}</div>
+          <div class="rec c-${rc}">${d.recomendacao}</div>
+        </div>
+        <div class="urg">Urgência: ${d.nivel_urgencia}</div>
+      </div>`;
+
+    const existencia = `
+      <div class="card">
+        <h2>Existência</h2>
+        ${row("Status", `<span class="e-${(d.existencia.status||"").toLowerCase()}" style="font-weight:600">${d.existencia.status}</span>`)}
+        ${d.existencia.numero_real ? row("Número real", d.existencia.numero_real) : ""}
+        ${row("Fonte", d.existencia.fonte || "—")}
+        ${d.existencia.url_fonte ? `<div class="row"><span class="key">Link</span><span class="val"><a href="${d.existencia.url_fonte}" target="_blank">Abrir fonte ↗</a></span></div>` : ""}
+        <div style="margin-top:.65rem"><span class="key" style="display:block;margin-bottom:.35rem">Flags</span>${flags(d.existencia.flags)}</div>
+      </div>`;
+
+    const conteudo = `
+      <div class="card">
+        <h2>Conteúdo</h2>
+        ${row("Assunto real", d.conteudo.assunto_real || "—")}
+        ${row("Dispositivo", d.conteudo.dispositivo || "—")}
+        ${row("Grau", d.conteudo.grau || "—")}
+        ${row("Tema repetitivo", d.conteudo.tema_repetitivo || "—")}
+        <div style="margin-top:.65rem"><span class="key" style="display:block;margin-bottom:.35rem">Flags</span>${flags(d.conteudo.flags)}</div>
+      </div>`;
+
+    const adeq = d.adequacao;
+    const adequacao = `
+      <div class="card" style="grid-column:1/-1">
+        <h2>Adequação contextual</h2>
+        ${row("Tese inferida na petição", `<em style="color:var(--text)">${adeq.tese_inferida_na_peticao || "—"}</em>`)}
+        ${row("Adequação temática",   pill(adeq.adequacao_tematica,   "t"))}
+        ${row("Adequação dispositivo", pill(adeq.adequacao_dispositivo, "d"))}
+        ${row("Peso precedencial",    pill(adeq.peso_precedencial,    "p"))}
+        <div style="margin-top:.75rem">
+          <span class="key" style="display:block;margin-bottom:.4rem">Justificativa</span>
+          <div class="justificativa-box">${adeq.justificativa || "—"}</div>
+        </div>
+      </div>`;
+
+    const motivos = d._meta?.motivos?.length
+      ? `<div class="card"><h2>Motivos da recomendação</h2><div class="motivos">${d._meta.motivos.map(m=>`<div class="motivo">${m}</div>`).join("")}</div></div>`
+      : "";
+
+    return `${banner}<div class="grid">${existencia}${conteudo}${adequacao}</div>${motivos}`;
+  }
+
+  async function verificar() {
+    const referencia = document.getElementById("referencia").value.trim();
+    const contexto   = document.getElementById("contexto").value.trim();
+
+    if (!referencia || !contexto) {
+      alert("Preencha a referência e o contexto.");
+      return;
+    }
+
+    const btn     = document.getElementById("btn");
+    const spinner = document.getElementById("spinner");
+    const label   = document.getElementById("btn-label");
+    const result  = document.getElementById("result");
+
+    btn.disabled  = true;
+    btn.classList.add("loading");
+    spinner.style.display = "block";
+    label.textContent = "Verificando...";
+    result.style.display = "none";
+
+    try {
+      const resp = await fetch("/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referencia, contexto }),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok || data.error) {
+        result.innerHTML = `<div class="error-box">Erro: ${data.error || resp.statusText}</div>`;
+      } else {
+        result.innerHTML = renderResult(data);
+      }
+      result.style.display = "block";
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      result.innerHTML = `<div class="error-box">Erro de conexão: ${err.message}</div>`;
+      result.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("loading");
+      spinner.style.display = "none";
+      label.textContent = "Verificar";
+    }
+  }
+
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") verificar();
+  });
+</script>
+</body>
+</html>

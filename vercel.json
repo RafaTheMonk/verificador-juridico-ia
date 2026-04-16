@@ -8,6 +8,6 @@
   },
   "rewrites": [
     { "source": "/verificar", "destination": "/api/verificar" },
-    { "source": "/", "destination": "/api/health" }
+    { "source": "/health",    "destination": "/api/health" }
   ]
 }
